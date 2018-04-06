@@ -53,9 +53,14 @@ public class ServerThread extends Thread {
     @Override
     public void run() {
         receiver = new Receiver(sign);
+        try {
+            receiver.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
-    public void sendMessage(String message) {
-        out.println(message);
+    public void sendMessage(String message, String sender) {
+        out.println(sender + message);
     }
 
     private void closeIO() {
@@ -80,15 +85,20 @@ public class ServerThread extends Thread {
     }
 
     private void waitClient() {
-        while (fromclient == null) {
+       { //??? while + sleep doesn't help if disconnect
             try {
                 System.out.println(sign + "Waiting for a client...");
                 fromclient = servers.accept();
                 System.out.println(sign + "Client connected");
             } catch (IOException | NullPointerException e) {
                 System.out.println(sign + "Can't accept");
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
             }
-        }
+       } while (fromclient == null);
     }
 
     private boolean loginExists(String login) {
@@ -180,7 +190,7 @@ public class ServerThread extends Thread {
             }
             out.println(sign + "OK");
             while ((message = in.readLine()) != null) {
-                Server.sendMessage(user, message);
+                Server.sendMessage(user, message, "[" + client.getLogin() + "] ");
             }
         } catch (IOException e) {
             //e.printStackTrace();
